@@ -1,3 +1,3 @@
 ## Database
 
-- [Database Base](./Database/DataBase.md)
+- [DBMS Basic](./Database/Database.md)
