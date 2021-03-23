@@ -1,4 +1,4 @@
 ## Database
 
-- [DBMS Basic](./Database/Database.md)
-- [B-Trees](./Database/Trees.md)
+- [DBMS Basic](./Database/DBMS.md)
+- [B-Trees](./Database/B-Trees.md)
