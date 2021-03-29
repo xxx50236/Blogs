@@ -19,25 +19,6 @@ import Foundation
  
  */
 
-class BTreeNode {
-    
-    let capacity: Int
-    
-    var keys: [Int] = []
-    
-    var childs: [BTreeNode] = []
-    
-    init(capacity: Int, keys: [Int], childs: [BTreeNode]) {
-        self.capacity = capacity
-        self.keys = keys
-        self.childs = childs
-    }
-    
-    var leaf: Bool {
-        return childs.isEmpty
-    }
-}
-
 class BTree {
     
     let capacity: Int
@@ -50,7 +31,7 @@ class BTree {
     }
 }
 
-//
+// MARK: Find
 extension BTree {
     
     func find(_ key: Int) -> BTreeNode? {
@@ -63,7 +44,7 @@ extension BTree {
             return nil
         }
         
-        let p = leftBound(key, in: n.keys)
+        let p = n.leftBound(of: key)
         
         if p < 0 || p >= n.keys.count {
             return nil
@@ -79,6 +60,7 @@ extension BTree {
     }
 }
 
+// MARK: Insert
 extension BTree {
     
     func insert(_ key: Int) {
@@ -95,16 +77,10 @@ extension BTree {
             return
         }
         
-        let p = leftBound(key, in: n.keys)
+        let p = n.leftBound(of: key)
         
         if n.leaf {
-            
-            if p < n.keys.count {
-                n.keys.insert(key, at: p)
-            } else {
-                n.keys.append(key)
-            }
-                    
+            n.insert(key)
         }
         
         if p < n.childs.count {
@@ -135,53 +111,44 @@ extension BTree {
             return
         }
         
-        var i: Int?
-        
         for (index, n) in p.childs.enumerated() where n === node {
-            i = index
+            p.insert(node.keys[middle])
+            p.childs[index] = l
+            p.insert(r, at: index + 1)
             break
         }
+                
+    }
+}
+
+// MARK: Delete
+extension BTree {
+    
+    private func delete(_ key: Int) {
         
-        guard let index = i else {
+        guard let findedNode = find(key) else {
             return
         }
         
-        let position = leftBound(node.keys[middle], in: p.keys)
-        if position < p.keys.count {
-            p.keys.insert(node.keys[middle], at: position)
+        if findedNode.leaf {
+            
+            
         } else {
-            p.keys.append(node.keys[middle])
-        }
-        
-        p.childs[index] = l
-        if (index + 1) >= p.childs.count {
-            p.childs.append(r)
-        } else {
-            p.childs.insert(r, at: index + 1)
+            
         }
         
     }
+    
 }
 
 extension BTree {
     
-    private func leftBound(_ key: Int, in keys: [Int]) -> Int {
-        var left = 0
-        var right = keys.count
-        
-        while left < right {
-            let middle = left + (right - left) / 2
-            
-            if key > keys[middle] {
-                left = middle + 1
-            } else if key < keys[middle] {
-                right = middle
-            } else {
-                right = middle
-            }
+    private func leftBiggestNode(of node: BTreeNode) -> BTreeNode? {
+        guard let lastNode = node.childs.last else {
+            return node
         }
         
-        return left
+        return leftBiggestNode(of: lastNode)
     }
     
 }
