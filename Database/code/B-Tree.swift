@@ -44,7 +44,7 @@ class BTree {
     
     private(set) var root: BTreeNode?
     
-    init(capacity: Int, root: BTreeNode) {
+    init(capacity: Int, root: BTreeNode? = nil) {
         self.capacity = capacity
         self.root = root
     }
@@ -82,7 +82,12 @@ extension BTree {
 extension BTree {
     
     func insert(_ key: Int) {
-        insert(key, into: root, from: nil)
+        
+        if root == nil {
+            root = BTreeNode(capacity: capacity, keys: [key], childs: [])
+        } else {
+            insert(key, into: root, from: nil)
+        }
     }
     
     private func insert(_ key: Int, into node: BTreeNode?, from pnode: BTreeNode?) {
@@ -99,50 +104,68 @@ extension BTree {
             } else {
                 n.keys.append(key)
             }
-            
-            if n.keys.count > capacity {
-                spilt(n.childs[p], from: n, at: p)
-            }
-            
-            return
+                    
         }
         
-        insert(key, into: n.childs[p], from: n)
+        if p < n.childs.count {
+            insert(key, into: n.childs[p], from: n)
+        }
         
-        spilt(n.childs[p], from: n, at: p)
+        spilt(n, from: pnode)
     }
     
-    private func spilt(_ node: BTreeNode, from pNode: BTreeNode?, at position: Int) {
+    private func spilt(_ node: BTreeNode, from pNode: BTreeNode?) {
+        
         guard node.keys.count > capacity else {
             return
         }
         
         let middle = node.keys.count / 2
         
-        let l = BTreeNode(capacity: capacity, keys: Array(node.keys[0..<middle]), childs: Array(node.childs[0...middle]))
+        let lt = node.leaf ? [] : Array(node.childs[0...middle])
+        let l = BTreeNode(capacity: capacity, keys: Array(node.keys[0..<middle]), childs: lt)
         
         let next = middle + 1
-        let r = BTreeNode(capacity: capacity, keys: Array(node.keys[next...]), childs: Array(node.childs[next...]))
+        let rt = node.leaf ? [] : Array(node.childs[next...])
+        let r = BTreeNode(capacity: capacity, keys: Array(node.keys[next...]), childs: rt)
         
-        if let p = pNode {
-            p.childs[position] = l
-            if (position + 1) < p.childs.count {
-                p.childs.append(r)
-            } else {
-                p.childs[position + 1] = r
-            }
-        } else {
+        guard let p = pNode else {
             let newRoot = BTreeNode(capacity: capacity, keys: [node.keys[middle]], childs: [l, r])
             root = newRoot
+            return
+        }
+        
+        var i: Int?
+        
+        for (index, n) in p.childs.enumerated() where n === node {
+            i = index
+            break
+        }
+        
+        guard let index = i else {
+            return
+        }
+        
+        let position = leftBound(node.keys[middle], in: p.keys)
+        if position < p.keys.count {
+            p.keys.insert(node.keys[middle], at: position)
+        } else {
+            p.keys.append(node.keys[middle])
+        }
+        
+        p.childs[index] = l
+        if (index + 1) >= p.childs.count {
+            p.childs.append(r)
+        } else {
+            p.childs.insert(r, at: index + 1)
         }
         
     }
-    
 }
 
 extension BTree {
     
-    func leftBound(_ key: Int, in keys: [Int]) -> Int {
+    private func leftBound(_ key: Int, in keys: [Int]) -> Int {
         var left = 0
         var right = keys.count
         
