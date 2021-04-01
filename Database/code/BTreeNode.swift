@@ -49,6 +49,44 @@ extension BTreeNode {
 
 extension BTreeNode {
     
+    func delete(_ key: Int) {
+        
+        let p = leftBound(of: key)
+        
+        if p < keys.count && keys[p] == key {
+            keys.remove(at: p)
+        }
+    }
+    
+    func delete(at p: Int) {
+        if p < keys.count {
+            keys.remove(at: p)
+        }
+    }
+    
+    func deleteChild(at p: Int) {
+        if p < childs.count {
+            childs.remove(at: p)
+        }
+    }
+    
+}
+
+extension BTreeNode {
+    func replace(_ key: Int, with newKey: Int) {
+        
+        let p = leftBound(of: key)
+        
+        guard keys[p] == key else {
+            return
+        }
+        
+        keys[p] = newKey
+    }
+}
+
+extension BTreeNode {
+    
     func leftBound(of key: Int) -> Int {
         var left = 0
         var right = keys.count
@@ -77,5 +115,3 @@ extension BTreeNode {
     }
     
 }
-
-

@@ -34,11 +34,11 @@ class BTree {
 // MARK: Find
 extension BTree {
     
-    func find(_ key: Int) -> BTreeNode? {
+    func find(_ key: Int) -> (BTreeNode, Int)? {
         return find(key, in: root)
     }
     
-    private func find(_ key: Int, in node: BTreeNode?) -> BTreeNode? {
+    private func find(_ key: Int, in node: BTreeNode?) -> (BTreeNode, Int)? {
         
         guard let n = node else {
             return nil
@@ -46,17 +46,15 @@ extension BTree {
         
         let p = n.leftBound(of: key)
         
-        if p < 0 || p >= n.keys.count {
-            return nil
+        if p < n.keys.count && key == n.keys[p] {
+            return (n, p)
         }
         
-        if key == n.keys[p] {
-            return n
-        } else if p < n.childs.count {
+        if p < n.childs.count {
             return find(key, in: n.childs[p])
-        } else {
-            return nil
         }
+        
+        return nil
     }
 }
 
@@ -124,17 +122,112 @@ extension BTree {
 // MARK: Delete
 extension BTree {
     
-    private func delete(_ key: Int) {
+    func delete(_ key: Int) {
         
-        guard let findedNode = find(key) else {
+//        guard let res = find(key) else {
+//            return
+//        }
+//
+//        if res.0.leaf {
+//            res.0.delete(key, at: res.1)
+//        } else if let n = leftBiggestNode(of: res.0),
+//                  let biggestKey = n.keys.last {
+//            res.0.replaceKey(at: res.1, with: biggestKey)
+//        }
+        
+    }
+    
+    func delete(_ key: Int, in n: BTreeNode, from pNode: BTreeNode?, dNode: BTreeNode?) {
+        
+        let position = n.leftBound(of: key)
+        
+        if let deleteNode = dNode {
+            
+            if let last = n.keys.last, n.leaf {
+                deleteNode.replace(key, with: last)
+                n.delete(last)
+            } else {
+                delete(key, in: n.childs[position], from: n, dNode: n)
+            }
+            
+        } else if position < n.keys.count && n.keys[position] == key {
+            
+            if n.leaf {
+                n.delete(at: position)
+            } else {
+                delete(key, in: n.childs[position], from: n, dNode: n)
+            }
+            
+        } else if position < n.childs.count {
+            delete(key, in: n.childs[position], from: n, dNode: dNode)
+        }
+        
+        balance(n, with: pNode)
+        
+    }
+    
+    func balance(_ node: BTreeNode, with pNode: BTreeNode?) {
+        
+        let minKey = node.capacity / 2
+        
+        if node.keys.count < minKey {
             return
         }
         
-        if findedNode.leaf {
+        guard let p = pNode else {
+            return
+        }
+        
+        for (index, n) in p.childs.enumerated() where node === n {
             
+            let right = index + 1
+            let left = index - 1
             
-        } else {
+            if right < p.childs.count && p.childs[right].keys.count > minKey {
+                let rightSibling = p.childs[right]
+                n.keys.append(p.keys[index])
+                p.replace(p.keys[index], with: rightSibling.keys[0])
+                rightSibling.delete(at: 0)
+                
+            } else if left >= 0 && p.childs[left].keys.count > minKey {
+                let leftSibling = p.childs[left]
+                let lastIndex = leftSibling.keys.count - 1
+                n.keys.append(p.keys[left])
+                p.replace(p.keys[left], with: leftSibling.keys[lastIndex])
+                leftSibling.delete(at: lastIndex)
+                
+            } else {
+                
+                var mergedNode: BTreeNode?
+                
+                if index == p.childs.count - 1 {
+                    let leftSibling = p.childs[left]
+                    leftSibling.keys.append(p.keys[left])
+                    leftSibling.keys.append(contentsOf: n.keys)
+                    
+                    p.delete(at: left)
+                    p.deleteChild(at: index)
+                    
+                    mergedNode = leftSibling
+                    
+                } else {
+                    n.keys.append(p.keys[index])
+                    if right < p.childs.count {
+                        let rightSibling = p.childs[right]
+                        n.keys.append(contentsOf: rightSibling.keys)
+                        p.deleteChild(at: right)
+                    }
+                    p.delete(index)
+                    mergedNode = n
+                }
+                
+                if let newRootNode = mergedNode, p === root && p.keys.isEmpty {
+                    root = newRootNode
+                }
+                
+            }
             
+            return
         }
         
     }
